@@ -1,0 +1,93 @@
+#include <SPI.h>
+#include <HX711.h>
+
+#define DOUT  3
+#define CLK  2
+int ctr=0;
+HX711 scale;
+const int chipSelect = 4;
+String dataString = "";
+float calibration_factor = 20230.09; //prev_value 20230.09
+float z = calibration_factor;
+
+int redPin = 9;
+int greenPin = 10;
+int bluePin = 11;
+float nw=0;
+float pw=0;
+void setup() {
+
+  
+  Serial.begin(9600);
+  Serial.println("HX711 calibration sketch");
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);  
+  scale.begin(DOUT, CLK);
+  scale.set_scale();
+  scale.tare(); //Reset the scale to 0
+
+  long zero_factor = scale.read_average(); //Get a baseline reading
+  Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
+  Serial.println(zero_factor);
+}
+void loop() {
+
+
+  float y;
+  String z;
+  scale.set_scale(calibration_factor); //Adjust to this calibration factor
+  
+  // Serial.print("Reading: ");
+  y = (scale.get_units());
+
+  if (Serial.available())
+  {
+    char temp = Serial.read();
+    if (temp == '+' || temp == 'a')
+      calibration_factor += 500;
+    else if (temp == '-' || temp == 'z')
+      calibration_factor -= 500;
+
+    else if (temp == '+' || temp == 's')
+      calibration_factor += 1000; 
+    else if (temp == '-' || temp == 'x')
+      calibration_factor -= 1000;
+
+  }
+  //z = String(y);
+  
+  nw=y;
+  /*Serial.print(nw);
+  Serial.print(",");
+  Serial.print(pw);
+  Serial.print(" kgs"); 
+  Serial.println();*/
+  if (nw == 0)
+  {
+    Serial.print(" please place the filled water bottle "); 
+  }
+  else if(nw>pw)
+  {
+   i:
+   delay(30000);
+   Serial.print(" please drink the water "); 
+   h:
+   delay(3000);
+   nw=(scale.get_units());
+   if(nw<pw)
+   {
+    Serial.print(" you are hydrated "); 
+    pw=nw;
+    goto i; 
+   }
+   else 
+   {
+     Serial.print(" please drink the water "); 
+     goto h;
+   }
+  }
+  pw=nw;
+  delay(100);
+
+}
